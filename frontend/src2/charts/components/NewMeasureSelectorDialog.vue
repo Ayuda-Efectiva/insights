@@ -16,7 +16,7 @@ const emit = defineEmits({ select: (measure: ExpressionMeasure) => true })
 const showDialog = defineModel()
 
 const columnTypes = COLUMN_TYPES.map((t) => t.value).filter((t) =>
-	FIELDTYPES.NUMBER.includes(t),
+	FIELDTYPES.NUMBER.includes(t)
 ) as MeasureDataType[]
 
 const newMeasure = ref(
@@ -30,7 +30,7 @@ const newMeasure = ref(
 				name: 'new_measure',
 				type: columnTypes[0],
 				expression: '',
-		  },
+		  }
 )
 
 const isValid = computed(() => {
@@ -104,7 +104,7 @@ const functionDoc = ref<FunctionSignature | null>(null)
 const columns = props.columnOptions.map((c) => c.label)
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
-		const result = [...res,...columns]
+		const result = [...res, ...columns]
 		functionList.value = result
 	}
 )
@@ -135,8 +135,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 <template>
 	<Dialog
 		:modelValue="Boolean(showDialog)"
-		:options="{ title: 'Create Measure',size:'2xl'
-		 }"
+		:options="{ title: 'Create Measure', size: '2xl' }"
 		@after-leave="resetNewMeasure"
 		@close="!newMeasure.expression && (showDialog = false)"
 	>
@@ -178,90 +177,81 @@ function updateDocumentationFromEditor(currentFunction: any) {
 						<div class="font-medium">Validation Errors</div>
 						<ul class="mt-1 pl-5">
 							<li v-for="(err, idx) in validationErrors" :key="idx">
-								<span v-if="err.line !== undefined"
-									> </span
-								>{{ err.message }}
+								<span v-if="err.line !== undefined"> </span>{{ err.message }}
 							</li>
 						</ul>
 					</div>
-						<div class="flex h-[12rem] gap-4">
-							<div class="w-[33%] flex flex-col border-r pr-4">
-								<TextInput
-									v-model="searchTerm"
-									type="text"
-									placeholder="Search"
-									class="w-full text-sm mb-1"
-								>
-									<template #prefix>
-										<SearchIcon class="h-4 w-4 text-gray-600" />
-									</template>
-								</TextInput>
-								<div class="flex-1 overflow-y-auto">
-									<div
-										v-if="filteredFunctions.length === 0"
-										class="flex h-full w-full items-center justify-center"
-									>
-										<p class="text-sm text-gray-500">No functions found</p>
-									</div>
-									<div
-										v-for="fn in filteredFunctions"
-										:key="fn"
-										@click="selectFunction(fn)"
-										:class="[
-											'cursor-pointer rounded px-2 py-1.5 text-sm',
-											selectedFunction === fn
-												? 'bg-blue-50 text-blue-700'
-												: 'hover:bg-gray-50 text-gray-700',
-										]"
-									>
-										{{ fn }}
-									</div>
-								</div>
-							</div>
+					<div class="flex h-[12rem] gap-4">
+						<div class="w-[33%] flex flex-col border-r pr-4">
+							<TextInput
+								v-model="searchTerm"
+								type="text"
+								placeholder="Search"
+								class="w-full text-sm mb-1"
+							>
+								<template #prefix>
+									<SearchIcon class="h-4 w-4 text-gray-600" />
+								</template>
+							</TextInput>
 							<div class="flex-1 overflow-y-auto">
 								<div
-									v-if="!functionDoc"
+									v-if="filteredFunctions.length === 0"
 									class="flex h-full w-full items-center justify-center"
 								>
-									<p class="text-sm text-gray-500">
-										Select a function to see details
-									</p>
+									<p class="text-sm text-gray-500">No functions found</p>
 								</div>
-								<div v-if="functionDoc" class="flex flex-col gap-3">
+								<div
+									v-for="fn in filteredFunctions"
+									:key="fn"
+									@click="selectFunction(fn)"
+									:class="[
+										'cursor-pointer rounded px-2 py-1.5 text-sm',
+										selectedFunction === fn
+											? 'bg-blue-50 text-blue-700'
+											: 'hover:bg-gray-50 text-gray-700',
+									]"
+								>
+									{{ fn }}
+								</div>
+							</div>
+						</div>
+						<div class="flex-1 overflow-y-auto">
+							<div
+								v-if="!functionDoc"
+								class="flex h-full w-full items-center justify-center"
+							>
+								<p class="text-sm text-gray-500">
+									Select a function to see details
+								</p>
+							</div>
+							<div v-if="functionDoc" class="flex flex-col gap-3">
+								<div
+									v-if="functionDoc.definition"
+									v-html="functionDoc.definition"
+									class="font-mono text-sm text-gray-800 bg-gray-50 rounded p-2"
+								></div>
+								<div
+									v-if="functionDoc.description"
+									class="whitespace-pre-wrap text-sm text-gray-700"
+								>
+									{{ functionDoc.description }}
+								</div>
+								<div v-if="functionDoc.params?.length" class="flex flex-col gap-2">
+									<h5 class="text-sm font-medium text-gray-700">Parameters:</h5>
 									<div
-										v-if="functionDoc.definition"
-										v-html="functionDoc.definition"
-										class="font-mono text-sm text-gray-800 bg-gray-50 rounded p-2"
-									></div>
-									<div
-										v-if="functionDoc.description"
-										class="whitespace-pre-wrap text-sm text-gray-700"
+										v-for="param in functionDoc.params"
+										:key="param.name"
+										class="ml-2 text-sm"
 									>
-										{{ functionDoc.description }}
-									</div>
-									<div
-										v-if="functionDoc.params?.length"
-										class="flex flex-col gap-2"
-									>
-										<h5 class="text-sm font-medium text-gray-700">
-											Parameters:
-										</h5>
-										<div
-											v-for="param in functionDoc.params"
-											:key="param.name"
-											class="ml-2 text-sm"
-										>
-											<span class="font-mono font-medium text-gray-800">{{
-												param.name
-											}}</span>
-											<span class="text-gray-600"
-												>: {{ param.description }}</span
-											>
-										</div>
+										<span class="font-mono font-medium text-gray-800">{{
+											param.name
+										}}</span>
+										<span class="text-gray-600">: {{ param.description }}</span>
 									</div>
 								</div>
 							</div>
 						</div>
+					</div>
 				</div>
 
 				<div class="mt-4 flex items-center justify-end gap-2">
