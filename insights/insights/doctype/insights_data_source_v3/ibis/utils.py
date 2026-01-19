@@ -245,15 +245,6 @@ def is_function(node, tree):
     return False
 
 
-def is_LHS(node, tree):
-    for parent in ast.walk(tree):
-        if isinstance(parent, ast.Assign):
-            for target in parent.targets:
-                if target == node or (isinstance(target, ast.Name) and target.id == node.id):
-                    return True
-    return False
-
-
 def validate_function_name(node, available_functions: set[str]):
     func_name = node.func.id
     if func_name in available_functions:
@@ -275,11 +266,13 @@ def validate_variable_name(node, tree, available_functions: set[str], available_
     if var_name in available_functions or var_name in available_columns:
         return None
 
-    if is_function(node, tree):
+    # pass if the variable is being assigned (LHS)
+    # perf: this is faster and more accurate than looping
+    # ctx is Store if the container is an assignment target
+    if isinstance(node.ctx, ast.Store):
         return None
 
-    # IMP: Skip validation if the variable is on the LHS of an assignment
-    if is_LHS(node, tree):
+    if is_function(node, tree):
         return None
 
     suggestions = find_similar_names(var_name, available_columns)
