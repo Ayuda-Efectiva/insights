@@ -179,7 +179,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 						<ul class="mt-1 pl-5">
 							<li v-for="(err, idx) in validationErrors" :key="idx">
 								<span v-if="err.line !== undefined"
-									>Lin {{ err.line }}, Col {{ err.column }}: </span
+									> </span
 								>{{ err.message }}
 							</li>
 						</ul>
