@@ -335,7 +335,7 @@ def validate_types(expression: str, columns: list[dict]):
     try:
         validation_table = ibis.table(schema, name="validation_table")
         eval_context = eval_script(validation_table, schema)
-        eval(expression, {"__builtins__": {}}, eval_context)
+        exec(expression, {"__builtins__": {}}, eval_context)
         return {"is_valid": True, "errors": []}
 
     except AttributeError as e:
@@ -348,7 +348,7 @@ def validate_types(expression: str, columns: list[dict]):
 
     except Exception as e:
         frappe.log_error(f"Unexpected validation error: {str(e)}")
-        return {"is_valid": True, "errors": []}
+        return {"is_valid": False, "errors": []}
 
 
 @frappe.whitelist()
