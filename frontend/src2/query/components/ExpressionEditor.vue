@@ -196,6 +196,7 @@ const validateExpression = debounce(() => {
 				:hide-line-numbers="props.hideLineNumbers"
 				:multi-line="props.multiLine"
 				:column-names="columnNames"
+				:validation-errors="validationErrors"
 				@view-update="
 					() => (fetchCompletions(), validateExpression())
 				"
@@ -229,7 +230,7 @@ const validateExpression = debounce(() => {
 							class="mb-2 last:mb-0"
 						>
 							<div class="text-sm text-[#7c7c7c] font-medium">
-								Line {{ error.line }}, Col {{ error.column }}: {{ error.message }}
+								 {{ error.message }}
 							</div>
 							<div v-if="error.hint" class="mt-1 text-[#7c7c7c] font-medium">
 								{{ error.hint }}
