@@ -91,6 +91,10 @@ onMounted(() => {
 	}
 	dialogElement.classList.remove('overflow-hidden', 'rounded-xl', 'bg-white')
 	dialogElement.children[0]?.classList.add('rounded-xl')
+
+	if (expression.value?.trim()) {
+		validateExpression()
+	}
 })
 
 const currentFunctionSignature = ref<FunctionSignature>()
@@ -152,33 +156,46 @@ type ValidationError = {
 }
 const validationState = ref<'idle' | 'validating' | 'valid' | 'error'>('idle')
 const validationErrors = ref<ValidationError[]>([])
+const lastValidatedExpression = ref<string>('')
 
 const validateExpression = debounce(() => {
-	if (!expression.value || !expression.value.trim()) {
+	const currentExpression = expression.value || ''
+
+	if (currentExpression === lastValidatedExpression.value) {
+		return
+	}
+
+	if (!currentExpression.trim()) {
 		validationState.value = 'idle'
 		validationErrors.value = []
+		lastValidatedExpression.value = ''
 		return
 	}
 
 	validationState.value = 'validating'
+	lastValidatedExpression.value = currentExpression
 
 	cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.validate_expression', {
-		expression: expression.value,
+		expression: currentExpression,
 		column_options: JSON.stringify(props.columnOptions),
 	})
 		.then((res: any) => {
-			if (res.is_valid) {
-				validationState.value = 'valid'
-				validationErrors.value = []
-			} else {
-				validationState.value = 'error'
-				validationErrors.value = res.errors || []
+			if (currentExpression === expression.value) {
+				if (res.is_valid) {
+					validationState.value = 'valid'
+					validationErrors.value = []
+				} else {
+					validationState.value = 'error'
+					validationErrors.value = res.errors || []
+				}
 			}
 		})
 		.catch((e: any) => {
 			console.error('Validation error:', e)
-			validationState.value = 'idle'
-			validationErrors.value = []
+			if (currentExpression === expression.value) {
+				validationState.value = 'idle'
+				validationErrors.value = []
+			}
 		})
 }, 500)
 </script>
