@@ -367,17 +367,32 @@ def validate_types(expression: str, columns: list[dict]):
         exec(expression, {"__builtins__": {}}, eval_context)
         return {"is_valid": True, "errors": []}
 
-    except AttributeError as e:
-        error = handle_attribute_error(e)
-        return {"is_valid": False, "errors": [error]}
+    except (AttributeError, TypeError) as e:
+        _,_,tb = sys.exc_info()
+        line = get_error_line(tb)
+        error_msg = str(e)
 
-    except TypeError as e:
-        error = create_error(line=1, column=0, message=f"Type error: {str(e)}")
-        return {"is_valid": False, "errors": [error]}
+        if isinstance(e, AttributeError):
+            error = handle_attribute_error(e, line)
+            return {"is_valid": False, "errors": [error]}
+
+        # for <function count at 0x...>
+        if "Unable to infer datatype" in error_msg and "<function" in error_msg:
+            match = re.search(r"<function (\w+)", error_msg)
+            func_name = match.group(1) if match else "unknown"
+
+            msg = f"Type error: You are trying to do math with the function '{func_name}' itself."
+            hint = f"Hint: Did you forget parentheses? Try '{func_name}()' instead of '{func_name}'."
+
+            return {"is_valid": False, "errors": [create_error(line, 0, msg, hint=hint)]}
+
+        return {"is_valid": False, "errors": [create_error(line, 0, f"Type error: {error_msg}")]}
 
     except Exception as e:
+        _,_,tb = sys.exc_info()
+        line = get_error_line(tb)
         frappe.log_error(f"Unexpected validation error: {str(e)}")
-        return {"is_valid": False, "errors": []}
+        return {"is_valid": False, "errors": [create_error(line, 0, f"Error: {str(e)}")]}
 
 
 @frappe.whitelist()
