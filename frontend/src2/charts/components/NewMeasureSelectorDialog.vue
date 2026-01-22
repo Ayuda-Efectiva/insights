@@ -201,17 +201,23 @@ function updateDocumentationFromEditor(currentFunction: any) {
 									<p class="text-sm text-gray-500">No functions found</p>
 								</div>
 								<div
-									v-for="fn in filteredFunctions"
-									:key="fn"
-									@click="selectFunction(fn)"
+									v-for="item in filteredFunctions"
+									:key="item.name"
+									@click="selectFunction(item)"
 									:class="[
-										'cursor-pointer rounded px-2 py-1.5 text-sm',
-										selectedFunction === fn
-											? 'bg-blue-50 text-blue-700'
-											: 'hover:bg-gray-50 text-gray-700',
+										'cursor-pointer rounded px-2.5 py-2 text-md flex items-center justify-between gap-2',
+										selectedFunction === item.name
+											? 'bg-gray-100 text-gray-900'
+											: 'hover:bg-gray-50 text-gray-900',
 									]"
 								>
-									{{ fn }}
+									<span class="truncate">{{ item.name }}</span>
+									<span
+										v-if="item.type === 'column' && item.dataType"
+										class="text-xs opacity-60 flex-shrink-0"
+									>
+										{{ item.dataType }}
+									</span>
 								</div>
 							</div>
 						</div>
@@ -226,28 +232,10 @@ function updateDocumentationFromEditor(currentFunction: any) {
 							</div>
 							<div v-if="functionDoc" class="flex flex-col gap-3">
 								<div
-									v-if="functionDoc.definition"
-									v-html="functionDoc.definition"
-									class="font-mono text-sm text-gray-800 bg-gray-50 rounded p-2"
-								></div>
-								<div
 									v-if="functionDoc.description"
 									class="whitespace-pre-wrap text-sm text-gray-700"
 								>
 									{{ functionDoc.description }}
-								</div>
-								<div v-if="functionDoc.params?.length" class="flex flex-col gap-2">
-									<h5 class="text-sm font-medium text-gray-700">Parameters:</h5>
-									<div
-										v-for="param in functionDoc.params"
-										:key="param.name"
-										class="ml-2 text-sm"
-									>
-										<span class="font-mono font-medium text-gray-800">{{
-											param.name
-										}}</span>
-										<span class="text-gray-600">: {{ param.description }}</span>
-									</div>
 								</div>
 							</div>
 						</div>
