@@ -316,19 +316,45 @@ def eval_script(table, schema: dict[str, str]):
 
 
 # Functions that are not supported by certain column types like `DateColumn.sum()`
-def handle_attribute_error(error: AttributeError):
+def handle_attribute_error(error: AttributeError, line: int = 1):
+    obj = getattr(error, "obj", None)
+    attr_name = getattr(error, "name", None)
     error_msg = str(error)
-    match = re.search(r"'(\w+)Column' object has no attribute '(\w+)'", error_msg)
 
-    if match:
-        column_type = match.group(1)
-        method_name = match.group(2)
-        message = f"Type error: {column_type} columns do not support {method_name}()"
-    else:
-        message = f"Type error: {error_msg}"
+    if "'NoneType' object has no attribute" in error_msg:
+        message = "Type error: count() missing 1 required positional argument: 'column'"
+        return create_error(line=line, column=0, message=message)
 
-    return create_error(line=1, column=0, message=message)
+    if obj is None or attr_name is None:
+        return create_error(line=line, column=0, message=f"Type error: {error_msg}")
 
+    message = f"Type error: {error_msg}"
+    hint = None
+
+    if isinstance(obj, ir.Expr):
+        dtype = obj.type()
+
+        # Check if this method exists on a COLUMN of this type
+        try:
+            mock_table = ibis.table({"mock": dtype}, name="validation_mock")
+            mock_col = mock_table["mock"]
+            has_method_on_col = hasattr(mock_col, attr_name)
+        except Exception:
+            has_method_on_col = False
+
+        if isinstance(obj, ir.Scalar):
+            if has_method_on_col:
+                message = f"Type error: Cannot call aggregation '{attr_name}()' on a scalar value."
+                hint = (
+                    f"Hint: '{attr_name}' expects a column but you are applying it to a single value "
+                )
+            else:
+                message = f"Type error: '{dtype}' data does not support '{attr_name}()'."
+
+        elif isinstance(obj, ir.Column):
+            message = f"Type error: '{dtype}' columns do not support '{attr_name}()'."
+
+    return create_error(line=line, column=0, message=message, hint=hint)
 
 def validate_types(expression: str, columns: list[dict]):
     schema = get_ibis_dtype(columns)
