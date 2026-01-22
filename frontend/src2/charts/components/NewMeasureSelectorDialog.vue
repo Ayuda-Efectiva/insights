@@ -151,9 +151,10 @@ function updateDocumentationFromEditor(currentFunction: any) {
 <template>
 	<Dialog
 		:modelValue="Boolean(showDialog)"
+		:disableOutsideClickToClose="true"
 		:options="{ title: 'Create Measure', size: '2xl' }"
 		@after-leave="resetNewMeasure"
-		@close="!newMeasure.expression && (showDialog = false)"
+		@close="showDialog = false"
 	>
 		<template #body>
 			<div class="min-w-[30rem] flex flex-col px-4 pb-4 pt-3">
