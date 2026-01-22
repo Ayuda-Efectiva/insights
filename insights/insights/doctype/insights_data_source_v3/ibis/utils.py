@@ -199,8 +199,11 @@ def parse_column_metadata(column_options: str):
     return meta
 
 
-def create_error(line: int, column: int, message: str):
-    return {"line": line, "column": column, "message": message}
+def create_error(line: int, column: int, message: str, hint: str = None):
+    error = {"line": line, "column": column, "message": message}
+    if hint:
+        error["hint"] = hint
+    return error
 
 
 def get_ibis_dtype(columns: list[dict]):
