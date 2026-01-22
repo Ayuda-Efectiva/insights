@@ -19,6 +19,7 @@ const props = defineProps<{
 	placeholder?: string
 	hideLineNumbers?: boolean
 	multiLine?: boolean
+	class?: string
 }>()
 const expression = defineModel<string>({
 	required: true,
@@ -206,6 +207,7 @@ const validateExpression = debounce(() => {
 			<Code
 				ref="codeEditor"
 				language="python"
+				:class="props.class"
 				class="column-expression"
 				v-model="expression"
 				:placeholder="placeholder"
@@ -243,7 +245,6 @@ const validateExpression = debounce(() => {
 									<div class="text-sm text-[#7c7c7c] font-medium">
 										{{ error.message }}
 										{{ error!.hint }}
-
 									</div>
 								</div>
 							</div>

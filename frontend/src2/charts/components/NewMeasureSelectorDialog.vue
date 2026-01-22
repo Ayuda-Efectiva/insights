@@ -183,6 +183,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 					</div>
 					<ExpressionEditor
 						v-model="newMeasure.expression"
+						class= "column-expression"
 						:column-options="props.columnOptions"
 						@function-signature-update="updateDocumentationFromEditor"
 					/>
@@ -260,8 +261,22 @@ function updateDocumentationFromEditor(currentFunction: any) {
 	</Dialog>
 </template>
 
-<style>
+<style lang="scss">
 div[data-dismissable-layer] {
 	border-radius: 0.75rem;
 }
+.column-expression {
+	.cm-column-highlight{
+		background-color: #ededed !important;
+		border-radius: 2px !important;
+		padding: 1px 2px !important;
+		border: 1px solid #dedede !important;
+	}
+	.cm-scroller {
+		background-color: #ffffff !important;
+		border-radius: 4px !important;
+		border: 1px solid #ededed !important;
+	}
+}
+
 </style>
