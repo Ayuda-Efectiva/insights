@@ -82,39 +82,55 @@ function resetNewMeasure() {
 	}
 }
 
-const functionList = ref<string[]>([])
+type FunctionListItem = {
+	name: string
+	type: 'function' | 'column'
+	dataType?: string
+}
+
+const functionList = ref<FunctionListItem[]>([])
 const selectedFunction = ref<string>('')
 
 const searchTerm = ref('')
 const filteredFunctions = computed(() => {
 	const searchQuery = searchTerm.value.trim().toLowerCase()
 	if (!searchQuery) return functionList.value
-	return functionList.value.filter((fn) => fn.toLowerCase().includes(searchQuery))
+	return functionList.value.filter((item) => item.name.toLowerCase().includes(searchQuery))
 })
 
 type FunctionSignature = {
 	name: string
 	definition: string
 	description: string
-	current_param: string
-	current_param_description: string
-	params: { name: string; description: string }[]
+	examples?: string[]
+	current_param?: string
+	current_param_description?: string
+	params?: { name: string; description: string }[]
 }
 const functionDoc = ref<FunctionSignature | null>(null)
-const columns = props.columnOptions.map((c) => c.label)
+
+const columnItems: FunctionListItem[] = props.columnOptions.map((c) => ({
+	name: c.label,
+	type: 'column' as const,
+	dataType: c.data_type,
+}))
+
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
-	(res: any) => {
-		const result = [...res, ...columns]
-		functionList.value = result
+	(res) => {
+		const functionItems: FunctionListItem[] = res.map((fn: string) => ({
+			name: fn,
+			type: 'function' as const,
+		}))
+		functionList.value = [...functionItems, ...columnItems]
 	}
 )
 
-function selectFunction(funcName: string) {
-	selectedFunction.value = funcName
+function selectFunction(item: FunctionListItem) {
+	selectedFunction.value = item.name
 
 	cachedCall(
 		'insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description',
-		{ funcName }
+		{ funcName: item.name }
 	)
 		.then((res: any) => {
 			if (res) {
@@ -170,17 +186,6 @@ function updateDocumentationFromEditor(currentFunction: any) {
 						:column-options="props.columnOptions"
 						@function-signature-update="updateDocumentationFromEditor"
 					/>
-					<div
-						v-if="validationErrors.length"
-						class="mt-2 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-					>
-						<div class="font-medium">Validation Errors</div>
-						<ul class="mt-1 pl-5">
-							<li v-for="(err, idx) in validationErrors" :key="idx">
-								<span v-if="err.line !== undefined"> </span>{{ err.message }}
-							</li>
-						</ul>
-					</div>
 					<div class="flex h-[12rem] gap-4">
 						<div class="w-[33%] flex flex-col border-r pr-4">
 							<TextInput
