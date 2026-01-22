@@ -1,9 +1,12 @@
 import ast
 import json
 import re
+import sys
+import traceback
 
 import frappe
 import ibis
+import ibis.expr.types as ir
 from ibis import selectors as s
 from jedi import Script
 
@@ -394,7 +397,12 @@ def validate_types(expression: str, columns: list[dict]):
         frappe.log_error(f"Unexpected validation error: {str(e)}")
         return {"is_valid": False, "errors": [create_error(line, 0, f"Error: {str(e)}")]}
 
-
+def get_error_line(tb) -> int:
+    if tb:
+        for frame in traceback.extract_tb(tb):
+            if frame.filename == "<string>":
+                return frame.lineno
+    return 1
 @frappe.whitelist()
 def validate_expression(expression: str, column_options: str):
     """Main function to validate expression/syntax"""
