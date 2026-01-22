@@ -214,48 +214,43 @@ const validateExpression = debounce(() => {
 				:multi-line="props.multiLine"
 				:column-names="columnNames"
 				:validation-errors="validationErrors"
-				@view-update="
-					() => (fetchCompletions(), validateExpression())
-				"
+				@view-update="fetchCompletions"
+				@input-change="validateExpression"
 			>
 			</Code>
 		</div>
-		<div>
-			<div
-				v-if="validationState === 'validating'"
-				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
-			>
-				<LoadingIndicator class="h-4 w-4 text-gray-500" />
-			</div>
-			<div
-				v-if="validationState === 'valid'"
-				class="flex items-center gap-2 max-h-[10%] px-3 py-2"
-			>
-				<CheckCircle class="h-4 w-4 text-sm text-[#7c7c7c]" />
-				<div class="text-sm text-[#7c7c7c] font-medium">Valid Syntax</div>
-			</div>
-			<div
-				v-if="validationErrors.length"
-				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
-			>
-				<div class="flex items-center gap-2 text-red-800">
-					<Info class="h-4 w-4 flex-shrink-0" />
-					<div class="flex-1">
-						<div
-							v-for="(error, index) in validationErrors"
-							:key="index"
-							class="mb-2 last:mb-0"
-						>
-							<div class="text-sm text-[#7c7c7c] font-medium">
-								 {{ error.message }}
-							</div>
-							<div v-if="error.hint" class="mt-1 text-[#7c7c7c] font-medium">
-								{{ error.hint }}
+		<div class="min-h-[2.5rem]">
+			<transition name="fade" mode="out-in">
+				<div class="flex items-center gap-4 max-h-[10%] px-3 py-2 border-t border-b">
+					<template v-if="validationState === 'validating'">
+						<LoadingIndicator class="h-4 w-4 text-gray-500" />
+					</template>
+
+					<template v-else-if="validationState === 'valid'">
+						<CheckCircle class="h-4 w-4 text-sm text-[#7c7c7c]" />
+						<div class="text-sm text-[#7c7c7c] font-medium">Valid Syntax</div>
+					</template>
+
+					<template v-else-if="validationErrors.length">
+						<div class="flex items-center gap-2 text-red-800">
+							<Info class="h-4 w-4 flex-shrink-0" />
+							<div class="flex-1">
+								<div
+									v-for="(error, index) in validationErrors"
+									:key="index"
+									class="mb-2 last:mb-0"
+								>
+									<div class="text-sm text-[#7c7c7c] font-medium">
+										{{ error.message }}
+										{{ error!.hint }}
+
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			</transition>
 		</div>
 	</div>
 </template>
