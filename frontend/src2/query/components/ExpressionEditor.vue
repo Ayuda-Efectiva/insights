@@ -248,7 +248,11 @@ const validateExpression = debounce(() => {
 								</div>
 							</div>
 						</div>
-					</div>
+					</template>
+
+					<template v-else>
+						<div class="text-sm text-gray-500">No output</div>
+					</template>
 				</div>
 			</transition>
 		</div>
