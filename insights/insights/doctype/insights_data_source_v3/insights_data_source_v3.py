@@ -50,7 +50,7 @@ class InsightsDataSourceDocument:
             frappe.throw("Only one site database can be configured")
 
     def on_update(self):
-        if self.type == "API":
+        if self.type == "REST API":
             self.db_set(
                 {
                     "database_type": "DuckDB",
@@ -124,7 +124,7 @@ class InsightsDataSourceDocument:
     def validate(self):
         if self.is_site_db:
             return
-        if self.type == "API":
+        if self.type == "REST API":
             self.validate_api_fields()
         elif self.database_type == "SQLite" or self.database_type == "DuckDB":
             self.validate_database_name()
@@ -241,7 +241,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_sitedb_connection()
         if self.is_frappe_db:
             return get_frappedb_connection(self)
-        if self.type == "API":
+        if self.type == "REST API":
             return insights.warehouse.get_connection(schema=self.schema)
         if self.database_type == "MariaDB":
             return get_mariadb_connection(self)
@@ -292,7 +292,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
     @frappe.whitelist()
     def test_connection(self, raise_exception=False):
-        if self.type == "API":
+        if self.type == "REST API":
             return self.test_api_connection(raise_exception)
 
         try:
@@ -312,8 +312,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 raise e
 
     def get_api_client(self):
-        if self.type != "API":
-            frappe.throw("Only API Data Sources have an API client")
+        if self.type != "REST API":
+            frappe.throw("Only REST API Data Sources have an API client")
 
         return RestAPIClient(self)
 
