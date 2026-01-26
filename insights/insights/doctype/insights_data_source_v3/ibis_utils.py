@@ -137,9 +137,9 @@ class IbisQueryBuilder:
 
     def get_column(self, column_name, throw=True):
         if column_name in self.query.columns:
-            return getattr(self.query, column_name)
+            return self.query[column_name]
         if sanitize_name(column_name) in self.query.columns:
-            return getattr(self.query, sanitize_name(column_name))
+            return self.query[sanitize_name(column_name)]
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
