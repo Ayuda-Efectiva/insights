@@ -1,5 +1,6 @@
 import ast
 import time
+from contextlib import contextmanager
 from datetime import date
 
 import frappe
@@ -803,7 +804,8 @@ def exec_with_return(
     tree.body.pop()  # remove the last expression
     _script = ast.unparse(tree)
     if _script.strip():
-        safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
+        with ensure_rollback():
+            safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
         return safe_eval(output_expression, _globals, _locals)
     else:
         return safe_eval(output_expression, _globals, _locals)
@@ -861,12 +863,14 @@ def get_code_results(code: str, variables=None):
                 variable_context[var.get("variable_name")] = var.get("variable_value")
 
     _locals = {"results": results, **variable_context}
-    _, _locals = safe_exec(
-        code,
-        _globals={"pandas": pandas},
-        _locals=_locals,
-        restrict_commit_rollback=True,
-    )
+    with ensure_rollback():
+        _, _locals = safe_exec(
+            code,
+            _globals={"pandas": pandas},
+            _locals=_locals,
+            restrict_commit_rollback=True,
+        )
+
     results = _locals["results"]
     if results is None or len(results) == 0:
         results = [{"error": "No results"}]
@@ -884,3 +888,11 @@ def get_code_results(code: str, variables=None):
         results = pd.DataFrame(results)
 
     return results
+
+
+@contextmanager
+def ensure_rollback():
+    try:
+        yield
+    finally:
+        frappe.db.rollback()
