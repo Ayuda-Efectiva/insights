@@ -893,6 +893,7 @@ def get_code_results(code: str, variables=None):
 @contextmanager
 def ensure_rollback():
     try:
+        frappe.db.savepoint()
         yield
     finally:
         frappe.db.rollback()
