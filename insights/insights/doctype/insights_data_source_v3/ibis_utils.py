@@ -887,9 +887,9 @@ def get_code_results(code: str, variables=None):
 
 @contextmanager
 def ensure_rollback():
-    save_point = frappe.generate_hash(length=12)
+    hash = frappe.generate_hash(length=4)
     try:
-        frappe.db.savepoint(save_point)
+        frappe.db.savepoint(f"save_point_{hash}")
         yield
     finally:
-        frappe.db.rollback(save_point=save_point)
+        frappe.db.rollback(save_point=f"save_point_{hash}")
