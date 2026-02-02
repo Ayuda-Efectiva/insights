@@ -20,6 +20,7 @@ const props = defineProps<{
 	hideLineNumbers?: boolean
 	multiLine?: boolean
 	class?: string
+	showOutput?: boolean
 }>()
 const expression = defineModel<string>({
 	required: true,
@@ -202,7 +203,7 @@ const validateExpression = debounce(() => {
 </script>
 
 <template>
-	<div class="flex flex-col gap-2">
+	<div class="flex flex-col gap-2 w-full">
 		<div ref="codeContainer" class="relative flex h-[10rem] w-full text-base">
 			<Code
 				ref="codeEditor"
@@ -221,7 +222,7 @@ const validateExpression = debounce(() => {
 			>
 			</Code>
 		</div>
-		<div class="min-h-[2.5rem]">
+		<div v-if="showOutput" class="min-h-[2.5rem] ">
 			<transition name="fade" mode="out-in">
 				<div class="flex items-center gap-4 max-h-[10%] px-3 py-2 border-t border-b">
 					<template v-if="validationState === 'validating'">
