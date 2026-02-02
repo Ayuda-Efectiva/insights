@@ -338,6 +338,7 @@ function getVisibleTableLimit(dataSource: string) {
 							:column-options="expandedTableColumns"
 							v-model="tableRestrictions[table.name]"
 							placeholder="eg. country == 'India'"
+							show-output: false
 							class="h-fit max-h-[10rem] min-h-[2.5rem] text-sm"
 						/>
 					</div>
