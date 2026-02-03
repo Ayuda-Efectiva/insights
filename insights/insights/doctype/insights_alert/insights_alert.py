@@ -46,10 +46,19 @@ class InsightsAlert(Document):
         if self.disabled:
             return
 
+        if self.query:
+            self.has_query_permission()
+
         try:
             self.evaluate_condition()
         except Exception as e:
             frappe.throw(f"Invalid condition: {e}")
+
+    def has_query_permission(self):
+        if not frappe.has_permission("Insights Query v3", "read", self.query):
+            frappe.throw(
+                "You do not have permission to access this query"
+            )
 
     @frappe.whitelist()
     def send_alert(self, force=False):
