@@ -14,6 +14,9 @@ def get_public_key(resource_type, resource_name):
         get_dashboard_public_key,
     )
 
+    if not isinstance(resource_name, str):
+        frappe.throw("Invalid resource name")
+
     if resource_type == "Insights Dashboard":
         return get_dashboard_public_key(resource_name)
     if resource_type == "Insights Chart":
