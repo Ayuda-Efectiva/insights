@@ -10,7 +10,6 @@ from croniter import croniter
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
-from jinja2 import Template
 
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
@@ -56,9 +55,7 @@ class InsightsAlert(Document):
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
-            frappe.throw(
-                "You do not have permission to access this query"
-            )
+            frappe.throw("You do not have permission to access this query")
 
     @frappe.whitelist()
     def send_alert(self, force=False):
@@ -99,7 +96,7 @@ class InsightsAlert(Document):
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
         context = self.get_message_context()
-        message_md = Template(message_md).render(context)
+        message_md = render_template_restricted(message_md, context)
         if self.channel == "Telegram":
             return message_md
 
@@ -181,9 +178,7 @@ def send_alerts():
 
 class TelegramAlert:
     def __init__(self, chat_id):
-        self.token = frappe.get_single("Insights Settings").get_password(
-            "telegram_api_token"
-        )
+        self.token = frappe.get_single("Insights Settings").get_password("telegram_api_token")
         if not self.token:
             frappe.throw("Telegram Bot Token not set in Insights Settings")
 
@@ -199,3 +194,26 @@ class TelegramAlert:
     @property
     def bot(self):
         return telegram.Bot(token=self.token)
+
+
+def render_template_restricted(template: str, context: dict) -> str:
+    """Render a Jinja template with a restricted sandbox environment.
+
+    Only allows access to explicitly passed context variables and basic filters.
+    Does not expose frappe utilities or other globals.
+
+    Uses the same sandboxed environment as frappe.render_template but without
+    the get_safe_globals() that would expose frappe internals.
+    """
+    from frappe.utils.jinja import _get_jenv
+
+    base_jenv = _get_jenv()
+
+    # Create an overlay to avoid modifying the cached instance
+    jenv = base_jenv.overlay()
+
+    # Copy filters but do NOT add get_safe_globals() or jinja hooks
+    jenv.filters = base_jenv.filters.copy()
+
+    compiled_template = jenv.from_string(template)
+    return compiled_template.render(context)
