@@ -10,6 +10,7 @@ from croniter import croniter
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
+from jinja2 import Template
 
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
@@ -89,7 +90,7 @@ class InsightsAlert(Document):
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
         context = self.get_message_context()
-        message_md = frappe.render_template(message_md, context=context)
+        message_md = Template(message_md).render(context)
         if self.channel == "Telegram":
             return message_md
 
