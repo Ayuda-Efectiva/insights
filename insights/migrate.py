@@ -8,7 +8,6 @@ import frappe
 def after_migrate():
     try:
         create_admin_team()
-        enable_permissions_by_default()
     except Exception:
         frappe.log_error(title="Error creating Admin Team")
 
@@ -23,9 +22,3 @@ def create_admin_team():
             }
         ).insert(ignore_permissions=True)
 
-
-def enable_permissions_by_default():
-    settings = frappe.get_single("Insights Settings")
-    if not settings.enable_permissions:
-        settings.enable_permissions = 1
-        settings.save(ignore_permissions=True)
