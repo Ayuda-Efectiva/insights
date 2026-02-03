@@ -61,7 +61,12 @@ class IbisQueryBuilder:
                 and adhoc_filters.get("type") == "filter_group"
                 and adhoc_filters.get("filters")
             ):
-                operations.append(adhoc_filters)
+                # Filter out expression-based filters, keep only rule-based filters
+                adhoc_filters["filters"] = [
+                    f for f in adhoc_filters["filters"] if not f.get("expression", {}).get("type")
+                ]
+                if adhoc_filters["filters"]:
+                    operations.append(adhoc_filters)
 
         self.operations = operations
 
