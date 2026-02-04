@@ -51,6 +51,24 @@ class InsightsDataSourceDocument:
         ):
             frappe.throw("Only one site database can be configured")
 
+    def before_import(self):
+        if not frappe.flags.in_migrate or not self.is_site_db:
+            return
+
+        # TODO: better way to handle this?
+        # preserve customized site db credentials
+        if frappe.db.exists("Insights Data Source v3", "Site DB"):
+            existing_doc = frappe.get_doc("Insights Data Source v3", "Site DB")
+            self.update(
+                {
+                    "host": existing_doc.host,
+                    "port": existing_doc.port,
+                    "database_name": existing_doc.database_name,
+                    "username": existing_doc.username,
+                    "password": existing_doc.get_password("password"),
+                }
+            )
+
     def on_update(self):
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)
