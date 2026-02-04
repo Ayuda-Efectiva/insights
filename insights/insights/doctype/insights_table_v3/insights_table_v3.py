@@ -8,8 +8,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
 
+import insights
 from insights import create_toast
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.utils import InsightsDataSourcev3
 
 
@@ -83,8 +83,9 @@ class InsightsTablev3(Document):
 
         check_table_permission(data_source, table_name)
 
-        if not use_live_connection:
-            wt = Warehouse().get_table(data_source, table_name)
+        ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
+        if not use_live_connection and ds_type != "REST API":
+            wt = insights.warehouse.get_table(data_source, table_name)
             t = wt.get_ibis_table(import_if_not_exists=True)
         else:
             ds = InsightsDataSourcev3.get_doc(data_source)
@@ -97,7 +98,7 @@ class InsightsTablev3(Document):
     @frappe.whitelist()
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
-        wt = Warehouse().get_table(self.data_source, self.table)
+        wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
 
@@ -162,6 +163,19 @@ def get_allowed_documents(doctype):
             pluck="parent",
             distinct=True,
         )
+
+        custom_parent_doctypes = frappe.get_all(
+            "Custom Field",
+            filters={
+                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+                "options": child_doctype,
+            },
+            pluck="dt",
+            distinct=True,
+        )
+
+        # Combine and deduplicate parent doctypes
+        parent_doctypes = list(set(parent_doctypes + custom_parent_doctypes))
 
         # FIX: check permission of the parent and not the child table
         parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]

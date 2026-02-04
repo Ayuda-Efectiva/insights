@@ -17,9 +17,9 @@ from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
+import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -61,7 +61,12 @@ class IbisQueryBuilder:
                 and adhoc_filters.get("type") == "filter_group"
                 and adhoc_filters.get("filters")
             ):
-                operations.append(adhoc_filters)
+                # Filter out expression-based filters, keep only rule-based filters
+                adhoc_filters["filters"] = [
+                    f for f in adhoc_filters["filters"] if not f.get("expression", {}).get("type")
+                ]
+                if adhoc_filters["filters"]:
+                    operations.append(adhoc_filters)
 
         self.operations = operations
 
@@ -138,9 +143,9 @@ class IbisQueryBuilder:
 
     def get_column(self, column_name, throw=True):
         if column_name in self.query.columns:
-            return getattr(self.query, column_name)
+            return self.query[column_name]
         if sanitize_name(column_name) in self.query.columns:
-            return getattr(self.query, sanitize_name(column_name))
+            return self.query[sanitize_name(column_name)]
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
@@ -536,7 +541,12 @@ class IbisQueryBuilder:
                 with_clause_sql = "WITH " + ", ".join(with_clauses)
                 raw_sql = with_clause_sql + " " + raw_sql
 
-        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
+        supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
+        if (
+            supports_stored_procedure
+            and ds.enable_stored_procedure_execution
+            and raw_sql.strip().lower().startswith("exec")
+        ):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -576,7 +586,7 @@ class IbisQueryBuilder:
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 5)
 
-        return Warehouse().db.create_table(
+        return insights.warehouse.db.create_table(
             digest,
             results,
             temp=True,
@@ -789,9 +799,9 @@ def exec_with_return(
     if isinstance(last_node, ast.Expr):
         output_expression = ast.unparse(last_node)
     elif isinstance(last_node, ast.Assign):
-        output_expression = ast.unparse(last_node.targets[0])
+        output_expression = ast.unparse(last_node.value)
     elif isinstance(last_node, ast.AnnAssign | ast.AugAssign):
-        output_expression = ast.unparse(last_node.target)
+        output_expression = ast.unparse(last_node.value)
 
     _globals = _globals or {}
     _locals = _locals or {}
@@ -887,7 +897,9 @@ def get_code_results(code: str, variables=None):
 
 @contextmanager
 def ensure_rollback():
+    hash = frappe.generate_hash(length=4)
     try:
+        frappe.db.savepoint(f"save_point_{hash}")
         yield
     finally:
-        frappe.db.rollback()
+        frappe.db.rollback(save_point=f"save_point_{hash}")

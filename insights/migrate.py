@@ -4,12 +4,36 @@
 
 import frappe
 
+_creds = None
+
+
+def before_migrate():
+    global _creds
+    if frappe.db.exists("Insights Data Source v3", "Site DB"):
+        _creds = frappe.db.get_value(
+            "Insights Data Source v3",
+            "Site DB",
+            [
+                "host",
+                "port",
+                "username",
+                "password",
+                "database_name",
+                "use_ssl",
+                "enable_stored_procedure_execution",
+            ],
+            as_dict=True,
+        )
+
 
 def after_migrate():
+    global _creds
     try:
         create_admin_team()
+        if _creds:
+            frappe.db.set_value("Insights Data Source v3", "Site DB", _creds)
     except Exception:
-        frappe.log_error(title="Error creating Admin Team")
+        frappe.log_error(title="Error in after_migrate")
 
 
 def create_admin_team():

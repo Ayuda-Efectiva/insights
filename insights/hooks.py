@@ -1,5 +1,5 @@
 app_name = "insights"
-app_title = "Frappe Insights"
+app_title = "Insights"
 app_publisher = "Frappe Technologies Pvt. Ltd."
 app_description = "Powerful Reporting Tool for Frappe Apps"
 app_icon = "octicon octicon-file-directory"
@@ -83,10 +83,10 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 # ------------
 
 # before_install = "insights.install.before_install"
+before_migrate = "insights.migrate.before_migrate"
 after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
 
-before_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.before_request"]
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
 fixtures = [
@@ -168,6 +168,7 @@ scheduler_events = {
     ],
     "hourly": [
         "insights.api.data_store.update_failed_sync_status",
+        "insights.insights.doctype.insights_table_import_job.insights_table_import_job.run_scheduled_imports",
     ],
 }
 
