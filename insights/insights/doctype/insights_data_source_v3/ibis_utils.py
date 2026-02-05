@@ -789,7 +789,7 @@ def execute_ibis_query(
 
     # fix: check cache first
     if cache and has_cached_results(cache_key) and not force:
-        return get_cached_results(cache_key)
+        return get_cached_results(cache_key), None
 
     if hasattr(query, "limit") and limit:
         limit = int(limit or 100)
@@ -810,14 +810,14 @@ def execute_with_lock(query, sql, cache_key, cache, cache_expiry, force, referen
     # another process is executing this query
     # return immediately, frontend will poll for results
     if not try_acquire_lock(lock_key):
-        return {"status": "pending", "cache_key": cache_key},
+        return {"status": "pending", "cache_key": cache_key}, None
 
     slot = try_acquire_semaphore()
     # too many concurrent queries
     # release lock and return
     if slot is None:
         release_lock(lock_key)
-        return {"status": "queue_full"},
+        return {"status": "queue_full"}, None
 
     try:
         result, time_taken = execute_query(query, sql, cache_key, cache, cache_expiry, reference_name)
