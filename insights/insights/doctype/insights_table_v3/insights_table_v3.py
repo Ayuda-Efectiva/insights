@@ -151,6 +151,8 @@ def apply_user_permissions(t, data_source, table_name):
         final_query = " UNION ALL ".join(child_perm_queries)
         return t.sql(final_query)
 
+    return t.filter(False)
+
 
 def get_perm_sql_query(doctype, parent_doctype=None):
     return str(
