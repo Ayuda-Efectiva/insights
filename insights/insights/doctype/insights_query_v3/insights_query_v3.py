@@ -16,6 +16,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,
+    get_pending_query_result,
 )
 from insights.utils import deep_convert_dict_to_dict
 
@@ -129,7 +130,26 @@ class InsightsQueryv3(Document):
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
             reference_name=self.name,
+            use_lock = True
+            # TODO
+            # use_lock=self.use_live_connection,  # Only lock live DB queries not warehouse
         )
+
+        if isinstance(results, dict) and results.get("status") == "pending":
+            return {
+                "status": "pending",
+                "cache_key": results.get("cache_key"),
+                "sql": ibis.to_sql(ibis_query),
+                "columns": get_columns_from_schema(ibis_query.schema()),
+            }
+
+        if isinstance(results, dict) and results.get("status") == "queue_full":
+            return {
+                "status": "queue_full",
+                "sql": ibis.to_sql(ibis_query),
+                "columns": get_columns_from_schema(ibis_query.schema()),
+            }
+
         results = results.to_dict(orient="records")
 
         columns = get_columns_from_schema(ibis_query.schema())
@@ -139,6 +159,22 @@ class InsightsQueryv3(Document):
             "rows": results,
             "time_taken": time_taken,
         }
+
+
+    # Check if a pending query has executed and return results
+    # Used for polling when another process is executing the same query
+    @insights_whitelist()
+    def check_pending_result(self, cache_key):
+        result = get_pending_query_result(cache_key)
+
+        if result["status"] == "completed":
+            return {
+                "status": "completed",
+                "rows": result["result"].to_dict(orient="records"),
+                "time_taken": result["time_taken"],
+            }
+
+        return {"status": result["status"]}
 
     @insights_whitelist()
     def format(self, raw_sql):
@@ -158,6 +194,7 @@ class InsightsQueryv3(Document):
             cache_expiry=60 * 5,
             reference_doctype=self.doctype,
             reference_name=self.name,
+            use_lock=False,
         )
         total_count = count_results.values[0][0]
         return int(total_count)
@@ -173,6 +210,7 @@ class InsightsQueryv3(Document):
             limit=10_00_000,
             reference_doctype=self.doctype,
             reference_name=self.name,
+            use_lock=False,
         )
         if format == "excel":
             output = BytesIO()
@@ -209,6 +247,7 @@ class InsightsQueryv3(Document):
             cache_expiry=24 * 60 * 60,
             reference_doctype=self.doctype,
             reference_name=self.name,
+            use_lock=False,
         )
         return result[column_name].tolist()
 
@@ -229,6 +268,7 @@ class InsightsQueryv3(Document):
             cache=False,
             reference_doctype=self.doctype,
             reference_name=self.name,
+            use_lock=False,
         )
         return bool(len(results))
 
