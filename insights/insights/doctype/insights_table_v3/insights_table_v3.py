@@ -8,12 +8,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
 
-<<<<<<< HEAD
 from insights import create_toast
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
-=======
-import insights
->>>>>>> 09514c44 (fix: apply role & user permissions by default on site db)
 from insights.utils import InsightsDataSourcev3
 
 
