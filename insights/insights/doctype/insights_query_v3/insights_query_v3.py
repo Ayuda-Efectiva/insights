@@ -171,7 +171,7 @@ class InsightsQueryv3(Document):
             return {
                 "status": "completed",
                 "rows": result["result"].to_dict(orient="records"),
-                "time_taken": result["time_taken"],
+                "time_taken": result.get("time_taken"),
             }
 
         return {"status": result["status"]}
