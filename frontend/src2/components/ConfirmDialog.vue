@@ -2,7 +2,7 @@
 	<Dialog v-model="show" :options="{ title: title }">
 		<template #body-content>
 			<p class="text-p-base text-gray-700" v-if="message">
-				{{ message }}
+				{{ __('message') }}
 			</p>
 			<div class="space-y-4">
 				<FormControl
@@ -23,7 +23,7 @@
 					@click="onConfirm"
 					:loading="isLoading"
 				>
-					{{ primaryActionLabel || 'Confirm' }}
+					{{ primaryActionLabel || __('Confirm') }}
 				</Button>
 			</div>
 		</template>
