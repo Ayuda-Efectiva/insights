@@ -184,13 +184,13 @@ export function makeQuery(name: string) {
 						data_type: column.type,
 					}))
 
-					if (retryCount === 0) {
-						createToast({
-							title: 'Query In Progress',
-							message: 'This query is being executed elsewhere',
-							variant: 'info',
-						})
-					}
+					// if (retryCount === 0) {
+					// 	createToast({
+					// 		title: 'Query In Progress',
+					// 		message: 'This query is being executed elsewhere',
+					// 		variant: 'info',
+					// 	})
+					// }
 
 					return pollForResults(response.cache_key)
 				}
