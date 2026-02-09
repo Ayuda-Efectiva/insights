@@ -30,49 +30,54 @@ from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import quarter_start, week_start
 from .ibis.utils import get_functions
+from . import lock_monitor
 
 # RedLock constants
 QUERY_LOCK_PREFIX = "insights_query_lock:"
 SEMAPHORE_KEY = "insights_query_semaphore"
 MAX_CONCURRENT_QUERIES = 16
-LOCK_TIMEOUT = 120
+LOCK_TIMEOUT = 180
 
 
-def try_acquire_lock(lock_key) -> bool:
+def try_acquire_lock(lock_key, query_name: str = None) -> bool:
     try:
         cache = frappe.cache()
         acquired = cache.set(lock_key, "1", ex=LOCK_TIMEOUT, nx=True)
-        return bool(acquired)
+        acquired = bool(acquired)
+
+        if acquired:
+            lock_monitor.log_lock_acquired(lock_key, query_name)
+        else:
+            lock_monitor.log_lock_contention(lock_key, query_name)
+
+        return acquired
     except Exception:
-        # Allow execution
         return True
 
 
-def release_lock(lock_key):
+def release_lock(lock_key, query_name: str = None):
     try:
         frappe.cache().delete(lock_key)
+        lock_monitor.log_lock_released(lock_key, query_name)
     except Exception:
-        # TODO: handle this better
         pass
 
-# returns slot_id if acquired or None if queue is full
-def try_acquire_semaphore():
 
+def try_acquire_semaphore(query_name: str = None):
     try:
         redis = frappe.cache()
         current = redis.incr(SEMAPHORE_KEY)
 
+        redis.expire(SEMAPHORE_KEY, LOCK_TIMEOUT)
+
         if current > MAX_CONCURRENT_QUERIES:
             redis.decr(SEMAPHORE_KEY)
+            lock_monitor.log_queue_full(query_name)
             return None
 
-        # fix: set expiry on first to prevent stuck/stale counters
-        if current == 1:
-            redis.expire(SEMAPHORE_KEY, LOCK_TIMEOUT)
-
+        lock_monitor.log_semaphore_acquired(current)
         return current
     except Exception:
-        # allow execution if redis fails
         return 0
 
 
@@ -83,13 +88,13 @@ def release_semaphore():
 
         if current < 0:
             redis.set(SEMAPHORE_KEY, 0)
+        lock_monitor.log_semaphore_released()
     except Exception:
         pass
 
 
-def is_query_executing(cache_key):
+def is_query_executing(lock_key):
     try:
-        lock_key = f"{QUERY_LOCK_PREFIX}{cache_key}"
         return frappe.cache().get(lock_key) is not None
     except Exception:
         return False
