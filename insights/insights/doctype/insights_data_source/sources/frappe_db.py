@@ -271,7 +271,8 @@ class SiteDB(FrappeDB):
             host=frappe.conf.db_host or "127.0.0.1",
             port=frappe.conf.db_port or "3306",
             ssl=False,
-            ssl_verify_cert=True,
+            # ssl_verify_cert=True, # DFP: same value as `ssl` to avoid development environments error
+            ssl_verify_cert=False,
             charset="utf8mb4",
             use_unicode=True,
         )
